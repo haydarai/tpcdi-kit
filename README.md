@@ -1,3 +1,4 @@
+
 # TPC-DI Kit
 
 ## Usage
@@ -6,6 +7,9 @@ First, generate TPC-DI data using `Tools/DIGen.jar` and store it in `staging/<sc
     $ mkdir staging/5/
     $ cd Tools/
     $ java -jar DIGen.jar -o ../staging/5/ -sf 5
+
+### Config
+This file store information about how to connect to the memsql server you are using. Don't forget to update this file with your memsql `host`, `port`, and `user`.
 
 ### Options:
 
@@ -16,8 +20,7 @@ First, generate TPC-DI data using `Tools/DIGen.jar` and store it in `staging/<sc
       -s SCALEFACTOR, --scalefactor=SCALEFACTOR
                             Scale factor used
       -d DBNAME, --dbname=DBNAME
-                            Name of database schema to which the data will be
-                            loaded
+                            Name of database schema to which the data will be loaded
 
 ### Example:
 
