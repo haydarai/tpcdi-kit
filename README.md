@@ -1,7 +1,7 @@
 # TPC-DI Kit
 
 ## Usage
-First, generate TPC-DI data using `Tools/DIGen.jar` and store it in `staging/\<scalefactor>/` directory. For example, using scalefactor of 5 you can run:
+First, generate TPC-DI data using `Tools/DIGen.jar` and store it in `staging/<scalefactor>/` directory. For example, using scalefactor of 5 you can run:
 
     $ mkdir staging/5/
     $ cd Tools/
@@ -21,4 +21,4 @@ First, generate TPC-DI data using `Tools/DIGen.jar` and store it in `staging/\<s
 
 ### Example:
 
-    $ python main.py -d tpcdi5 -s 5
+    $ python main.py -d tpcdi5 -sf 5
