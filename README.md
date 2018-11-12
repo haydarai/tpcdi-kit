@@ -9,7 +9,7 @@ First, generate TPC-DI data using `Tools/DIGen.jar` and store it in `staging/<sc
     $ java -jar DIGen.jar -o ../staging/5/ -sf 5
 
 ### Config
-This file store information about how to connect to the memsql server you are using. Don't forget to update this file with your memsql `host`, `port`, and `user`.
+The db.conf file store information about how to connect to the memsql server you are using. Don't forget to update this file with your memsql `host`, `port`, and `user`.
 
 ### Options:
 
@@ -24,4 +24,6 @@ This file store information about how to connect to the memsql server you are us
 
 ### Example:
 
-    $ python main.py -d tpcdi5 -sf 5
+    $ python main.py -d tpcdi5 -s 5
+### Dependency
+Make sure you have mysql client installed on your system.
