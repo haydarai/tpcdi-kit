@@ -38,10 +38,11 @@ def external_sort(input_file, col_idx, max_chunk_size, onFinished):
                 counter +=1
                 chunk = []
         # Merge        
+        # Credit: https://stackoverflow.com/questions/23450145/sort-a-big-file-with-python-heapq-merge
         output_path = os.path.join(tmpdirname, input_file.split('/')[-1])
-        with ExitStack() as stack, open(output_path, 'w') as output_file:
+        with ExitStack() as stack, open("output_path", 'w') as output_file:
             files = [stack.enter_context(open(chunk)) for chunk in chunk_names]
-            output_file.writelines(merge(*files))
+            output_file.writelines(merge(*files, key=lambda row: CSV_Transformer.transofrm(row, "|",)[col_idx]))
 
             # Do something with the sorted file
             onFinished(output_path)
@@ -51,4 +52,4 @@ def dummyOnFinish(sorted_file):
 
 # Usage Example
 if __name__ == "__main__":
-    external_sort(input_file='../staging/5/Batch1/Industry.txt',col_idx=1, max_chunk_size=30, onFinished=dummyOnFinish)
+    external_sort(input_file='staging/5/Batch1/Industry.txt',col_idx=2, max_chunk_size=2, onFinished=dummyOnFinish)
