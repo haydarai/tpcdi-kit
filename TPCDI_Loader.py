@@ -29,7 +29,7 @@ class TPCDI_Loader():
 
   def load_statusType(self):
     """
-    Create StatusType table in the target database and then load rwos in StatusType.txt into it.
+    Create StatusType table in the target database and then load rows in StatusType.txt into it.
     """
 
       
@@ -53,3 +53,30 @@ class TPCDI_Loader():
     # Execute the command
     os.system(statusType_ddl_cmd)
     os.system(statusType_load_cmd)
+
+  def load_taxRate(self):
+    """
+    Create TaxRate table in the target database and then load rows in TaxRate.txt into it.
+    """
+
+    # Create ddl to store taxRate
+    taxRate_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE TaxRate (
+      TX_ID CHAR(4),
+      TX_NAME CHAR(50) NOT NULL,
+			TX_RATE NUMERIC(6,5) NOT NULL
+    );
+    """
+
+    # Create query to load text data into taxRate table
+    taxRate_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/TaxRate.txt' INTO TABLE TaxRate COLUMNS TERMINATED BY '|';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    taxRate_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+taxRate_ddl+"\""
+    taxRate_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+taxRate_load_query+"\""
+    
+    # Execute the command
+    os.system(taxRate_ddl_cmd)
+    os.system(taxRate_load_cmd)

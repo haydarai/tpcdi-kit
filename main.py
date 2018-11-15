@@ -21,3 +21,4 @@ if __name__ == "__main__":
   # Instantiate TPCDI_Loader and execute the loader in order
   loader = TPCDI_Loader(options.scalefactor, options.dbname, config)
   loader.load_statusType()
+  loader.load_taxRate()
