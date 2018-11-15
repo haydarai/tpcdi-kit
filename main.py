@@ -23,3 +23,4 @@ if __name__ == "__main__":
   loader.load_statusType()
   loader.load_taxRate()
   loader.load_tradeType()
+  loader.load_audit()

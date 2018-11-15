@@ -1,4 +1,5 @@
-import os 
+import os
+import glob
 
 class TPCDI_Loader():
   BASE_MYSQL_CMD = ""
@@ -108,3 +109,34 @@ class TPCDI_Loader():
     # Execute the command
     os.system(tradeType_ddl_cmd)
     os.system(tradeType_load_cmd)
+
+  def load_audit(self):
+    """
+    Create Audit table in the target database and then load rows in files with "_audit.csv" ending into it.
+    """
+
+    # Create ddl to store audit
+    audit_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE Audit (
+      DataSet CHAR(20) NOT Null,
+			BatchID NUMERIC(5),
+			AT_Date DATE,
+			AT_Attribute CHAR(50),
+			AT_Value NUMERIC(15),
+			DValue NUMERIC(15,5)
+    );
+    """
+
+    audit_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+audit_ddl+"\""
+    os.system(audit_ddl_cmd)
+
+    for filepath in glob.iglob("staging/"+self.sf+"/Batch1/*_audit.csv"):# Create query to load text data into tradeType table
+      audit_load_query="LOAD DATA LOCAL INFILE '"+filepath+"' INTO TABLE Audit COLUMNS TERMINATED BY ',' IGNORE 1 LINES;"
+      
+      # Construct mysql client bash command to execute ddl and data loading query
+      audit_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+audit_load_query+"\""
+      
+      # Execute the command
+      os.system(audit_load_cmd)
