@@ -38,7 +38,7 @@ class TPCDI_Loader():
     USE """+self.db_name+""";
 
     CREATE TABLE StatusType (
-      ST_ID CHAR(4),
+      ST_ID CHAR(4) NOT NULL,
       ST_NAME CHAR(10) NOT NULL
     );
     """
@@ -64,7 +64,7 @@ class TPCDI_Loader():
     USE """+self.db_name+""";
 
     CREATE TABLE TaxRate (
-      TX_ID CHAR(4),
+      TX_ID CHAR(4) NOT NULL,
       TX_NAME CHAR(50) NOT NULL,
 			TX_RATE NUMERIC(6,5) NOT NULL
     );
@@ -80,3 +80,31 @@ class TPCDI_Loader():
     # Execute the command
     os.system(taxRate_ddl_cmd)
     os.system(taxRate_load_cmd)
+  
+  def load_tradeType(self):
+    """
+    Create TradeType table in the target database and then load rows in TradeType.txt into it.
+    """
+
+    # Create ddl to store tradeType
+    tradeType_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE TradeType (
+      TT_ID CHAR(3) NOT NULL,
+      TT_NAME CHAR(12) NOT NULL,
+			TT_IS_SELL NUMERIC(1) NOT NULL,
+			TT_IS_MRKT NUMERIC(1) NOT NULL
+    );
+    """
+
+    # Create query to load text data into tradeType table
+    tradeType_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/TradeType.txt' INTO TABLE TradeType COLUMNS TERMINATED BY '|';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    tradeType_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+tradeType_ddl+"\""
+    tradeType_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+tradeType_load_query+"\""
+    
+    # Execute the command
+    os.system(tradeType_ddl_cmd)
+    os.system(tradeType_load_cmd)

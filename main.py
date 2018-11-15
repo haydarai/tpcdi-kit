@@ -22,3 +22,4 @@ if __name__ == "__main__":
   loader = TPCDI_Loader(options.scalefactor, options.dbname, config)
   loader.load_statusType()
   loader.load_taxRate()
+  loader.load_tradeType()
