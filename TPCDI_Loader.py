@@ -70,6 +70,40 @@ class TPCDI_Loader():
     os.system(dimDate_ddl_cmd)
     os.system(dimDate_load_cmd)
 
+  def load_dimTime(self):
+    """
+    Create DimTime table in the target database and then load rows in Time.txt into it.
+    """
+
+    # Create ddl to store dimTime
+    dimTime_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE DimTime (
+      SK_TimeID INTEGER Not NULL PRIMARY KEY,
+			TimeValue TIME Not NULL,
+			HourID numeric(2) Not NULL,
+			HourDesc CHAR(20) Not NULL,
+			MinuteID numeric(2) Not NULL,
+			MinuteDesc CHAR(20) Not NULL,
+			SecondID numeric(2) Not NULL,
+			SecondDesc CHAR(20) Not NULL,
+			MarketHoursFlag BOOLEAN,
+			OfficeHoursFlag BOOLEAN
+    );
+    """
+
+    # Create query to load text data into dimTime table
+    dimTime_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/Time.txt' INTO TABLE DimTime COLUMNS TERMINATED BY '|';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    dimTime_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dimTime_ddl+"\""
+    dimTime_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+dimTime_load_query+"\""
+    
+    # Execute the command
+    os.system(dimTime_ddl_cmd)
+    os.system(dimTime_load_cmd)
+
   def load_statusType(self):
     """
     Create StatusType table in the target database and then load rows in StatusType.txt into it.
