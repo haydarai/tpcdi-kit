@@ -28,6 +28,82 @@ class TPCDI_Loader():
     db_creation_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -e '"+db_creation_ddl+"'"
     os.system(db_creation_cmd)
 
+  def load_dimDate(self):
+    """
+    Create DimDate table in the target database and then load rows in Date.txt into it.
+    """
+
+    # Create ddl to store dimDate
+    dimDate_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE DimDate (
+      SK_DateID INTEGER NOT NULL PRIMARY KEY,
+			DateValue DATE NOT NULL,
+			DateDesc CHAR(20) NOT NULL,
+			CalendarYearID NUMERIC(4) NOT NULL,
+			CalendarYearDesc CHAR(20) NOT NULL,
+			CalendarQtrID NUMERIC(5) NOT NULL,
+			CalendarQtrDesc CHAR(20) NOT NULL,
+			CalendarMonthID NUMERIC(6) NOT NULL,
+			CalendarMonthDesc CHAR(20) NOT NULL,
+			CalendarWeekID NUMERIC(6) NOT NULL,
+			CalendarWeekDesc CHAR(20) NOT NULL,
+			DayOfWeeknumeric NUMERIC(1) NOT NULL,
+			DayOfWeekDesc CHAR(10) NOT NULL,
+			FiscalYearID NUMERIC(4) NOT NULL,
+			FiscalYearDesc CHAR(20) NOT NULL,
+			FiscalQtrID NUMERIC(5) NOT NULL,
+			FiscalQtrDesc CHAR(20) NOT NULL,
+			HolidayFlag BOOLEAN
+    );
+    """
+
+    # Create query to load text data into dimDate table
+    dimDate_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/Date.txt' INTO TABLE DimDate COLUMNS TERMINATED BY '|';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    dimDate_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dimDate_ddl+"\""
+    dimDate_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+dimDate_load_query+"\""
+    
+    # Execute the command
+    os.system(dimDate_ddl_cmd)
+    os.system(dimDate_load_cmd)
+
+  def load_dimTime(self):
+    """
+    Create DimTime table in the target database and then load rows in Time.txt into it.
+    """
+
+    # Create ddl to store dimTime
+    dimTime_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE DimTime (
+      SK_TimeID INTEGER Not NULL PRIMARY KEY,
+			TimeValue TIME Not NULL,
+			HourID numeric(2) Not NULL,
+			HourDesc CHAR(20) Not NULL,
+			MinuteID numeric(2) Not NULL,
+			MinuteDesc CHAR(20) Not NULL,
+			SecondID numeric(2) Not NULL,
+			SecondDesc CHAR(20) Not NULL,
+			MarketHoursFlag BOOLEAN,
+			OfficeHoursFlag BOOLEAN
+    );
+    """
+
+    # Create query to load text data into dimTime table
+    dimTime_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/Time.txt' INTO TABLE DimTime COLUMNS TERMINATED BY '|';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    dimTime_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dimTime_ddl+"\""
+    dimTime_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+dimTime_load_query+"\""
+    
+    # Execute the command
+    os.system(dimTime_ddl_cmd)
+    os.system(dimTime_load_cmd)
+
   def load_statusType(self):
     """
     Create StatusType table in the target database and then load rows in StatusType.txt into it.

@@ -20,6 +20,14 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read('db.conf')
 
+  # Instantiate TPCDI_Loader and execute the loader in order
+  loader = TPCDI_Loader(options.scalefactor, options.dbname, config)
+  loader.load_dimDate()
+  loader.load_dimTime()
+  loader.load_statusType()
+  loader.load_taxRate()
+  loader.load_tradeType()
+  loader.load_audit()
     # Instantiate TPCDI_Loader and execute the loader in order
     loader = TPCDI_Loader(options.scalefactor, options.dbname, config)
     loader.load_statusType()
