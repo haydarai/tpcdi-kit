@@ -9,6 +9,7 @@ from heapq import merge
 
 class CSV_Transformer():
     """
+    TODO: Make an abstract class, and this should extend the abstract class
     Transform a row in a csv flat file to a list
     Attributes:
         delimiter (str): Character used to limit a field entries to other fields.
@@ -90,15 +91,9 @@ def sort_merge_join(left, right, left_on, right_on, left_trf, right_trf):
                 elif curr_l_value[left_on]>curr_r_value[right_on]:
                     curr_r_value = right_trf.transofrm(next(sorted_right_file))
                 elif curr_l_value[left_on] == curr_r_value[right_on]:
-                    print(curr_l_value, curr_l_value)
+                    yield (curr_l_value + curr_l_value)
                     curr_l_value = left_trf.transofrm(next(sorted_left_file))
         except StopIteration:
             pass
 
-
-# Usage Example
-if __name__ == "__main__":
-    pipe_delimited_transformer = CSV_Transformer(delimiter="|")    
-    sort_merge_join('staging/5/Batch1/Industry.txt','staging/5/Batch1/Industry.txt',0,0,pipe_delimited_transformer,pipe_delimited_transformer)
-    
   
