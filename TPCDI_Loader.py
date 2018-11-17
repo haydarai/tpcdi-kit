@@ -104,6 +104,33 @@ class TPCDI_Loader():
     os.system(dimTime_ddl_cmd)
     os.system(dimTime_load_cmd)
 
+  def load_Industry(self):
+    """
+    Create Industry table in the target database and then load rows in Industry.txt into it.
+    """
+
+    # Create ddl to store industry
+    industry_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE Industry (
+      IN_ID CHAR(2) Not NULL,
+			IN_NAME CHAR(50) Not NULL,
+			IN_SC_ID CHAR(4) Not NULL
+    );
+    """
+
+    # Create query to load text data into industry table
+    industry_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/Industry.txt' INTO TABLE Industry COLUMNS TERMINATED BY '|';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    industry_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+industry_ddl+"\""
+    industry_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+industry_load_query+"\""
+    
+    # Execute the command
+    os.system(industry_ddl_cmd)
+    os.system(industry_load_cmd)
+
   def load_statusType(self):
     """
     Create StatusType table in the target database and then load rows in StatusType.txt into it.
