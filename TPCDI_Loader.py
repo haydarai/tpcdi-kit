@@ -6,7 +6,7 @@ class TPCDI_Loader():
 
   def __init__(self, sf, db_name, config):
     """
-    Initialize target database.
+    Initialize staging database.
 
     Attributes:
         sf (str): Scale factor to be used in benchmark.
@@ -28,9 +28,9 @@ class TPCDI_Loader():
     db_creation_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -e '"+db_creation_ddl+"'"
     os.system(db_creation_cmd)
 
-  def load_dimDate(self):
+  def load_staging_dimDate(self):
     """
-    Create DimDate table in the target database and then load rows in Date.txt into it.
+    Create DimDate table in the staging database and then load rows in Date.txt into it.
     """
 
     # Create ddl to store dimDate
@@ -70,9 +70,9 @@ class TPCDI_Loader():
     os.system(dimDate_ddl_cmd)
     os.system(dimDate_load_cmd)
 
-  def load_dimTime(self):
+  def load_staging_dimTime(self):
     """
-    Create DimTime table in the target database and then load rows in Time.txt into it.
+    Create DimTime table in the staging database and then load rows in Time.txt into it.
     """
 
     # Create ddl to store dimTime
@@ -104,9 +104,9 @@ class TPCDI_Loader():
     os.system(dimTime_ddl_cmd)
     os.system(dimTime_load_cmd)
 
-  def load_Industry(self):
+  def load_staging_Industry(self):
     """
-    Create Industry table in the target database and then load rows in Industry.txt into it.
+    Create Industry table in the staging database and then load rows in Industry.txt into it.
     """
 
     # Create ddl to store industry
@@ -131,9 +131,9 @@ class TPCDI_Loader():
     os.system(industry_ddl_cmd)
     os.system(industry_load_cmd)
 
-  def load_statusType(self):
+  def load_staging_statusType(self):
     """
-    Create StatusType table in the target database and then load rows in StatusType.txt into it.
+    Create StatusType table in the staging database and then load rows in StatusType.txt into it.
     """
 
       
@@ -158,9 +158,9 @@ class TPCDI_Loader():
     os.system(statusType_ddl_cmd)
     os.system(statusType_load_cmd)
 
-  def load_taxRate(self):
+  def load_staging_taxRate(self):
     """
-    Create TaxRate table in the target database and then load rows in TaxRate.txt into it.
+    Create TaxRate table in the staging database and then load rows in TaxRate.txt into it.
     """
 
     # Create ddl to store taxRate
@@ -185,9 +185,9 @@ class TPCDI_Loader():
     os.system(taxRate_ddl_cmd)
     os.system(taxRate_load_cmd)
   
-  def load_tradeType(self):
+  def load_staging_tradeType(self):
     """
-    Create TradeType table in the target database and then load rows in TradeType.txt into it.
+    Create TradeType table in the staging database and then load rows in TradeType.txt into it.
     """
 
     # Create ddl to store tradeType
@@ -215,7 +215,7 @@ class TPCDI_Loader():
 
   def load_audit(self):
     """
-    Create Audit table in the target database and then load rows in files with "_audit.csv" ending into it.
+    Create Audit table in the staging database and then load rows in files with "_audit.csv" ending into it.
     """
 
     # Create ddl to store audit
@@ -243,3 +243,125 @@ class TPCDI_Loader():
       
       # Execute the command
       os.system(audit_load_cmd)
+
+  def load_staging_company(self):
+    """
+    Create Company table in the staging database and then load rows in FINWIRE files with the type of CMP
+    """
+
+    # Create ddl to store tradeType
+    tradeType_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE Company (
+      PTS CHAR(15) NOT NULL,
+      REC_TYPE CHAR(3) NOT NULL,
+			COMPANY_NAME CHAR(60) NOT NULL,
+			CIK CHAR(10) NOT NULL,
+      STATUS CHAR(4) NOT NULL,
+      INDUSTRY_ID CHAR(2) NOT NULL,
+			SP_RATING CHAR(4) NOT NULL,
+			FOUNDING_DATE CHAR(8) NOT NULL,
+      ADDR_LINE_1 CHAR(80) NOT NULL,
+      ADDR_LINE_2 CHAR(80) NOT NULL,
+			POSTAL_CODE CHAR(12) NOT NULL,
+			CITY CHAR(25) NOT NULL,
+      STATE_PROVINCE CHAR(20) NOT NULL,
+      COUNTRY CHAR(24) NOT NULL,
+			CEO_NAME CHAR(46) NOT NULL,
+			DESCRIPTION CHAR(150) NOT NULL
+    );
+    """
+
+    tradeType_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+tradeType_ddl+"\""
+    os.system(tradeType_ddl_cmd)
+
+
+    base_query = "INSERT INTO Company VALUES "
+    base_path = "staging/"+self.sf+"/Batch1/"
+    for fname in os.listdir(base_path):
+      if("FINWIRE" in fname and "audit" not in fname):
+        with open(base_path+fname, 'r') as finwire_file:
+          for line in finwire_file:
+            pts = line[:15] #0
+            rec_type=line[15:18] #1
+
+            if rec_type=="CMP":
+              company_name = line[18:78] #2
+              cik = line[78:88] #3
+              status = line[88:92] #4
+              industry_id = line[92:94] #5
+              sp_rating = line[94:98] # 6
+              founding_date = line[98:106] #7
+              addr_line_1 = line[106:186] #8
+              addr_line_2 = line[186:266] #9
+              postal_code = line[266:278] #10
+              city = line[278:303] #10
+              state_province = line[303:323] #11
+              country = line[323:347] #12
+              ceo_name = line[347:393] #13
+              description = line[393:] #14
+
+              values = "('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')"%(pts,rec_type,company_name,cik,status,industry_id,sp_rating,founding_date,addr_line_1,addr_line_2,postal_code,city,state_province,country,ceo_name,description)
+
+              # Create query to load text data into tradeType table
+              tradeType_load_query=base_query+values
+    
+              # Construct mysql client bash command to execute ddl and data loading query
+              tradeType_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+tradeType_load_query+"\""
+    
+              # Execute the command
+              os.system(tradeType_load_cmd)
+    
+  def load_target_dim_company(self):
+    """
+    Create Dim Company table in the staging database and then load rows by joining staging_company, staging_industry, and staging StatusType
+    """
+
+    # Create ddl to store tradeType
+    dim_company_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE DimCompany (
+        SK_CompanyID INTEGER NOT NULL,
+        CompanyID INTEGER NOT NULL,
+        Status CHAR(10) Not NULL,
+        Name CHAR(60) Not NULL,
+        Industry CHAR(50) Not NULL,
+        SPrating CHAR(4),
+        isLowGrade BOOLEAN,
+        CEO CHAR(100) Not NULL,
+        AddressLine1 CHAR(80),
+        AddressLine2 CHAR(80),
+        PostalCode CHAR(12) Not NULL,
+        City CHAR(25) Not NULL,
+        StateProv CHAR(20) Not NULL,
+        Country CHAR(24),
+        Description CHAR(150) Not NULL,
+        FoundingDate DATE,
+        IsCurrent BOOLEAN Not NULL,
+        BatchID numeric(5) Not NULL,
+        EffectiveDate DATE Not NULL,
+        EndDate DATE Not NULL
+      );
+    """
+
+    # Create query to load text data into dim_company table
+    dim_company_load_query="""
+      INSERT INTO Dim Company
+      SELECT C.CIK, C.CIK,C.COMPANY_NAME,S.ST_NAME, I.IN_NAME,C.SP_RATING, IF(LEFT(C.SP_RATING,1)='A' OR LEFT (C.SP_RATING,3)='BBB','FALSE','TRUE'),
+            C.CEO_NAME, C.ADDR_LINE_1,C.ADDR_LINE_2, C.POSTAL_CODE, C.CITY, C.STATE_PROVINCE, C.COUNTRY, C.DESCRIPTION,
+            STR_TO_DATE(FOUNDING_DATE,'%Y%m%d'),TRUE, 1, STR_TO_DATE(LEFT(C.PTS,8),'%Y%m%d'), STR_TO_DATE('99991231','%Y%m%d')
+      FROM Company C
+      JOIN Industry I ON C.INDUSTRY_ID = I.IN_ID
+      JOIN StatusType S ON C.STATUS = S.ST_ID;
+    """
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    dim_company_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dim_company_ddl+"\""
+    dim_company_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+dim_company_load_query+"\""
+    
+    # Execute the command
+    os.system(dim_company_ddl_cmd)
+    os.system(dim_company_load_cmd)    
+  
