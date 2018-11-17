@@ -22,24 +22,18 @@ if __name__ == "__main__":
     config.read('db.conf')
 
     # Instantiate TPCDI_Loader and execute the loader in order
+    # First, load all flat files to staging tables
     loader = TPCDI_Loader(options.scalefactor, options.dbname, config)
-    loader.load_dimDate()
-    loader.load_dimTime()
-    loader.load_Industry()
-    loader.load_statusType()
-    loader.load_taxRate()
-    loader.load_tradeType()
+    loader.load_staging_dimDate()
+    loader.load_staging_dimTime()
+    loader.load_staging_Industry()
+    loader.load_staging_statusType()
+    loader.load_staging_taxRate()
+    loader.load_staging_tradeType()
     loader.load_audit()
     loader.init_diMessages()
     loader.load_prospect()
     loader.init_dimCustomer()
-
-    # Stupid example, joining the same Industry csv file
-    # It will return iterator
-    pipe_delimited_transformer = CSV_Transformer(delimiter="|")
-    res = sort_merge_join('staging/5/Batch1/Industry.txt', 'staging/5/Batch1/Industry.txt',
-                        0, 0, pipe_delimited_transformer, pipe_delimited_transformer)
-
-    # Use next() to get the next result
-    print(next(res))
-    print(next(res))
+    loader.load_staging_company()
+    
+    loader.load_target_dim_company()
