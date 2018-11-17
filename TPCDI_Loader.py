@@ -447,16 +447,16 @@ class TPCDI_Loader():
       # Execute the command
       os.system(audit_load_cmd)
 
-  def load_staging_company(self):
+  def load_staging_finwire(self):
     """
-    Create Company table in the staging database and then load rows in FINWIRE files with the type of CMP
+    Create S_Company and S_Security table in the staging database and then load rows in FINWIRE files with the type of CMP
     """
 
-    # Create ddl to store tradeType
-    tradeType_ddl = """
+    # Create ddl to store finwire
+    finwire_ddl = """
     USE """+self.db_name+""";
 
-    CREATE TABLE Company (
+    CREATE TABLE S_Company (
       PTS CHAR(15) NOT NULL,
       REC_TYPE CHAR(3) NOT NULL,
 			COMPANY_NAME CHAR(60) NOT NULL,
@@ -474,14 +474,34 @@ class TPCDI_Loader():
 			CEO_NAME CHAR(46) NOT NULL,
 			DESCRIPTION CHAR(150) NOT NULL
     );
+
+    CREATE TABLE S_Security (
+      PTS CHAR(15) NOT NULL,
+      REC_TYPE CHAR(3) NOT NULL,
+			SYMBOL CHAR(15) NOT NULL,
+			ISSUE_TYPE CHAR(6) NOT NULL,
+      STATUS CHAR(4) NOT NULL,
+      NAME CHAR(70) NOT NULL,
+			EX_ID CHAR(6) NOT NULL,
+			SH_OUT CHAR(13) NOT NULL,
+      FIRST_TRADE_DATE CHAR(8) NOT NULL,
+      FIRST_TRADE_EXCHANGE CHAR(8) NOT NULL,
+			DIVIDEN CHAR(12) NOT NULL,
+			COMPANY_NAME_OR_CIK CHAR(60) NOT NULL
+    );
     """
 
-    tradeType_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+tradeType_ddl+"\""
-    os.system(tradeType_ddl_cmd)
+    finwire_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+finwire_ddl+"\""
+    os.system(finwire_ddl_cmd)
 
 
-    base_query = "INSERT INTO Company VALUES "
+    
     base_path = "staging/"+self.sf+"/Batch1/"
+    s_company_base_query = "INSERT INTO S_Company VALUES "
+    s_security_base_query = "INSERT INTO S_Security VALUES "
+    s_company_values = []
+    s_security_values = []
+    max_packet = 150
     for fname in os.listdir(base_path):
       if("FINWIRE" in fname and "audit" not in fname):
         with open(base_path+fname, 'r') as finwire_file:
@@ -490,6 +510,7 @@ class TPCDI_Loader():
             rec_type=line[15:18] #1
 
             if rec_type=="CMP":
+              
               company_name = line[18:78] #2
               cik = line[78:88] #3
               status = line[88:92] #4
@@ -505,17 +526,42 @@ class TPCDI_Loader():
               ceo_name = line[347:393] #13
               description = line[393:] #14
 
-              values = "('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')"%(pts,rec_type,company_name,cik,status,industry_id,sp_rating,founding_date,addr_line_1,addr_line_2,postal_code,city,state_province,country,ceo_name,description)
+              s_company_values.append("('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')"%(pts,rec_type,company_name,cik,status,industry_id,sp_rating,founding_date,addr_line_1,addr_line_2,postal_code,city,state_province,country,ceo_name,description))
 
-              # Create query to load text data into tradeType table
-              tradeType_load_query=base_query+values
-    
-              # Construct mysql client bash command to execute ddl and data loading query
-              tradeType_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+tradeType_load_query+"\""
-    
-              # Execute the command
-              os.system(tradeType_load_cmd)
-    
+              if len(s_company_values)>=max_packet:
+                # Create query to load text data into tradeType table
+                s_company_load_query=s_company_base_query+','.join(s_company_values)
+                s_company_values = []
+                # Construct mysql client bash command to execute ddl and data loading query
+                s_company_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+s_company_load_query+"\""
+      
+                # Execute the command
+                os.system(s_company_load_cmd)
+            elif rec_type == "SEC":
+              
+              symbol = line[18:33]
+              issue_type = line[33:39]
+              status = line[39:43]
+              name = line[43:113]
+              ex_id = line[113:119]
+              sh_out = line[119:132]
+              first_trade_date = line[132:140]
+              first_trade_exchange = line[140:148]
+              dividen = line[148:160]
+              company_name = line[160:220] 
+              
+              s_security_values.append("('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')"%(pts,rec_type,symbol,issue_type,status,name,ex_id,sh_out,first_trade_date,first_trade_exchange,dividen,company_name))
+
+              if len(s_security_values)>=max_packet:
+                # Create query to load text data into tradeType table
+                s_security_load_query=s_security_base_query+','.join(s_security_values)
+                s_security_values = []
+                # Construct mysql client bash command to execute ddl and data loading query
+                s_security_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+s_security_load_query+"\""
+      
+                # Execute the command
+                os.system(s_security_load_cmd)
+
   def load_target_dim_company(self):
     """
     Create Dim Company table in the staging database and then load rows by joining staging_company, staging_industry, and staging StatusType
@@ -551,11 +597,11 @@ class TPCDI_Loader():
 
     # Create query to load text data into dim_company table
     dim_company_load_query="""
-      INSERT INTO Dim Company
+      INSERT INTO DimCompany
       SELECT C.CIK, C.CIK,C.COMPANY_NAME,S.ST_NAME, I.IN_NAME,C.SP_RATING, IF(LEFT(C.SP_RATING,1)='A' OR LEFT (C.SP_RATING,3)='BBB','FALSE','TRUE'),
             C.CEO_NAME, C.ADDR_LINE_1,C.ADDR_LINE_2, C.POSTAL_CODE, C.CITY, C.STATE_PROVINCE, C.COUNTRY, C.DESCRIPTION,
             STR_TO_DATE(FOUNDING_DATE,'%Y%m%d'),TRUE, 1, STR_TO_DATE(LEFT(C.PTS,8),'%Y%m%d'), STR_TO_DATE('99991231','%Y%m%d')
-      FROM Company C
+      FROM S_Company C
       JOIN Industry I ON C.INDUSTRY_ID = I.IN_ID
       JOIN StatusType S ON C.STATUS = S.ST_ID;
     """
