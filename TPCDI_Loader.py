@@ -286,6 +286,26 @@ class TPCDI_Loader():
 			DIVIDEN CHAR(12) NOT NULL,
 			COMPANY_NAME_OR_CIK CHAR(60) NOT NULL
     );
+
+    CREATE TABLE S_Financial(
+      PTS CHAR(15),
+      REC_TYPE CHAR(3),
+      YEAR CHAR(4),
+      QUARTER CHAR(1),
+      QTR_START_DATE CHAR(8),
+      POSTING_DATE CHAR(8),
+      REVENUE CHAR(17),
+      EARNINGS CHAR(17),
+      EPS CHAR(12),
+      DILUTED_EPS CHAR(12),
+      MARGIN CHAR(12),
+      INVENTORY CHAR(17),
+      ASSETS CHAR(17),
+      LIABILITIES CHAR(17),
+      SH_OUT CHAR(13),
+      DILUTED_SH_OUT CHAR(13),
+      CO_NAME_OR_CIK CHAR(60)
+    );
     """
 
     finwire_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+finwire_ddl+"\""
@@ -296,8 +316,10 @@ class TPCDI_Loader():
     base_path = "staging/"+self.sf+"/Batch1/"
     s_company_base_query = "INSERT INTO S_Company VALUES "
     s_security_base_query = "INSERT INTO S_Security VALUES "
+    s_financial_base_query = "INSERT INTO S_Financial VALUES"
     s_company_values = []
     s_security_values = []
+    s_financial_values = []
     max_packet = 150
     for fname in os.listdir(base_path):
       if("FINWIRE" in fname and "audit" not in fname):
@@ -307,7 +329,6 @@ class TPCDI_Loader():
             rec_type=line[15:18] #1
 
             if rec_type=="CMP":
-              
               company_name = line[18:78] #2
               cik = line[78:88] #3
               status = line[88:92] #4
@@ -335,7 +356,6 @@ class TPCDI_Loader():
                 # Execute the command
                 os.system(s_company_load_cmd)
             elif rec_type == "SEC":
-              
               symbol = line[18:33]
               issue_type = line[33:39]
               status = line[39:43]
@@ -345,7 +365,7 @@ class TPCDI_Loader():
               first_trade_date = line[132:140]
               first_trade_exchange = line[140:148]
               dividen = line[148:160]
-              company_name = line[160:220] 
+              company_name = line[160:] 
               
               s_security_values.append("('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')"%(pts,rec_type,symbol,issue_type,status,name,ex_id,sh_out,first_trade_date,first_trade_exchange,dividen,company_name))
 
@@ -358,6 +378,34 @@ class TPCDI_Loader():
       
                 # Execute the command
                 os.system(s_security_load_cmd)
+            elif rec_type == "FIN":
+              year = line[18:22]
+              quarter = line[22:23]
+              qtr_start_date = line[23:31]
+              posting_date = line[31:39]
+              revenue = line[39:56]
+              earnings = line[56:73]
+              eps = line[73:85]
+              diluted_eps = line[85:97]
+              margin = line[97:109]
+              inventory = line[109:126]
+              assets = line[126:143]
+              liabilities = line[143:160]
+              sh_out = line[160:173]
+              diluted_sh_out = line[173:126]
+              co_name_or_cik = line[126:]
+
+              s_financial_values.append("('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s)"%(pts, rec_type, year,quarter,qtr_start_date,posting_date, revenue, earnings, eps, diluted_eps, margin, inventory, assets, liabilities, sh_out,diluted_sh_out,co_name_or_cik))
+
+              if len(s_financial_values)>=max_packet:
+                # Create query to load text data into tradeType table
+                s_financial_load_query=s_financial_base_query+','.join(s_financial_values)
+                s_financial_values = []
+                # Construct mysql client bash command to execute ddl and data loading query
+                s_financial_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+s_financial_load_query+"\""
+      
+                # Execute the command
+                os.system(s_financial_load_cmd)
 
   def load_target_dim_company(self):
     """
