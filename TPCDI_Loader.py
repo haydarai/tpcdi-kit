@@ -143,7 +143,7 @@ class TPCDI_Loader():
     dimCustomer_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dimCustomer_ddl+"\""
     os.system(dimCustomer_ddl_cmd)
 
-  def load_dimTime(self):
+  def load_staging_dimTime(self):
     """
     Create DimTime table in the staging database and then load rows in Time.txt into it.
     """
