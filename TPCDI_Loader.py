@@ -417,7 +417,7 @@ class TPCDI_Loader():
     USE """+self.db_name+""";
 
     CREATE TABLE DimCompany (
-        SK_CompanyID INTEGER NOT NULL,
+        SK_CompanyID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
         CompanyID INTEGER NOT NULL,
         Status CHAR(10) Not NULL,
         Name CHAR(60) Not NULL,
@@ -442,8 +442,8 @@ class TPCDI_Loader():
 
     # Create query to load text data into dim_company table
     dim_company_load_query="""
-      INSERT INTO DimCompany
-      SELECT C.CIK, C.CIK,S.ST_NAME, C.COMPANY_NAME, I.IN_NAME,C.SP_RATING, IF(LEFT(C.SP_RATING,1)='A' OR LEFT (C.SP_RATING,3)='BBB','FALSE','TRUE'),
+      INSERT INTO DimCompany (CompanyID,Status,Name,Industry,SPrating,isLowGrade,CEO,AddressLine1,AddressLine2,PostalCode,City,StateProv,Country,Description,FoundingDate,IsCurrent,BatchID,EffectiveDate,EndDate)
+      SELECT C.CIK,S.ST_NAME, C.COMPANY_NAME, I.IN_NAME,C.SP_RATING, IF(LEFT(C.SP_RATING,1)='A' OR LEFT (C.SP_RATING,3)='BBB','FALSE','TRUE'),
             C.CEO_NAME, C.ADDR_LINE_1,C.ADDR_LINE_2, C.POSTAL_CODE, C.CITY, C.STATE_PROVINCE, C.COUNTRY, C.DESCRIPTION,
             STR_TO_DATE(FOUNDING_DATE,'%Y%m%d'),TRUE, 1, STR_TO_DATE(LEFT(C.PTS,8),'%Y%m%d'), STR_TO_DATE('99991231','%Y%m%d')
       FROM S_Company C
@@ -459,6 +459,64 @@ class TPCDI_Loader():
     os.system(dim_company_ddl_cmd)
     os.system(dim_company_load_cmd)    
   
+  def load_target_dim_security(self):
+    """
+    Create Security table in the staging database and then load rows by ..
+    """
+
+    # Create ddl to store tradeType
+    security_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE DimSecurity( SK_SecurityID INTEGER Not NULL PRIMARY KEY AUTO_INCREMENT,
+      Symbol CHAR(15) Not NULL,
+      Issue CHAR(6) Not NULL,
+      Status CHAR(10) Not NULL,
+      Name CHAR(70) Not NULL,
+      ExchangeID CHAR(6) Not NULL,
+      SK_CompanyID INTEGER Not NULL,
+      SharesOutstanding INTEGER Not NULL,
+      FirstTrade DATE Not NULL,
+      FirstTradeOnExchange DATE Not NULL,
+      Dividend INTEGER Not NULL,
+      IsCurrent BOOLEAN Not NULL,
+      BatchID numeric(5) Not NULL,
+      EffectiveDate DATE Not NULL,
+      EndDate DATE Not NULL
+    );
+    """
+
+    # Create query to load text data into security table
+    security_load_query="""
+    INSERT INTO DimSecurity (Symbol,Issue,Status,Name,ExchangeID,SK_CompanyID,SharesOutstanding,FirstTrade,FirstTradeOnExchange,Dividend,IsCurrent,BatchID,EffectiveDate,EndDate)
+    SELECT SS.SYMBOL,SS.ISSUE_TYPE, ST.ST_NAME, SS.NAME, SS.EX_ID, DC.SK_CompanyID, SS.SH_OUT, STR_TO_DATE(SS.FIRST_TRADE_DATE,'%Y%m%d'),
+          STR_TO_DATE(FIRST_TRADE_EXCHANGE, '%Y%m%d'), SS.DIVIDEN, TRUE, 1, STR_TO_DATE(LEFT(SS.PTS,8),'%Y%m%d'), STR_TO_DATE('99991231','%Y%m%d')
+    FROM S_Security SS
+    JOIN StatusType ST ON SS.STATUS = ST.ST_ID
+    JOIN DimCompany DC ON DC.SK_CompanyID = convert(SS.COMPANY_NAME_OR_CIK, SIGNED)
+                        AND DC.EffectiveDate <= STR_TO_DATE(LEFT(SS.PTS,8),'%Y%m%d')
+                        AND STR_TO_DATE(LEFT(SS.PTS,8),'%Y%m%d') < DC.EndDate
+                        AND LEFT(SS.COMPANY_NAME_OR_CIK,1)='0';
+
+    INSERT INTO DimSecurity (Symbol,Issue,Status,Name,ExchangeID,SK_CompanyID,SharesOutstanding,FirstTrade,FirstTradeOnExchange,Dividend,IsCurrent,BatchID,EffectiveDate,EndDate)
+    SELECT SS.SYMBOL,SS.ISSUE_TYPE, ST.ST_NAME, SS.NAME, SS.EX_ID, DC.SK_CompanyID, SS.SH_OUT, STR_TO_DATE(SS.FIRST_TRADE_DATE,'%Y%m%d'),
+          STR_TO_DATE(FIRST_TRADE_EXCHANGE, '%Y%m%d'), SS.DIVIDEN, TRUE, 1, STR_TO_DATE(LEFT(SS.PTS,8),'%Y%m%d'), STR_TO_DATE('99991231','%Y%m%d')
+    FROM S_Security SS
+    JOIN StatusType ST ON SS.STATUS = ST.ST_ID
+    JOIN DimCompany DC ON RTRIM(SS.COMPANY_NAME_OR_CIK) = DC.Name
+                        AND DC.EffectiveDate <= STR_TO_DATE(LEFT(SS.PTS,8),'%Y%m%d')
+                        AND STR_TO_DATE(LEFT(SS.PTS,8),'%Y%m%d') < DC.EndDate
+                        AND LEFT(SS.COMPANY_NAME_OR_CIK,1) <> '0';
+    """
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    dim_security_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+security_ddl+"\""
+    dim_security_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+security_load_query+"\""
+    
+    # Execute the command
+    os.system(dim_security_ddl_cmd)
+    os.system(dim_security_load_cmd)
+
   def load_target_financial(self):
     """
     Create Financial table in the staging database and then load rows by ..
@@ -511,3 +569,4 @@ class TPCDI_Loader():
     # Execute the command
     os.system(dim_financial_ddl_cmd)
     os.system(dim_financial_load_cmd)    
+
