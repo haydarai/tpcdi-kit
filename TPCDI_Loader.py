@@ -392,10 +392,10 @@ class TPCDI_Loader():
               assets = line[126:143]
               liabilities = line[143:160]
               sh_out = line[160:173]
-              diluted_sh_out = line[173:126]
-              co_name_or_cik = line[126:]
+              diluted_sh_out = line[173:186]
+              co_name_or_cik = line[186:]
 
-              s_financial_values.append("('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s)"%(pts, rec_type, year,quarter,qtr_start_date,posting_date, revenue, earnings, eps, diluted_eps, margin, inventory, assets, liabilities, sh_out,diluted_sh_out,co_name_or_cik))
+              s_financial_values.append("('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')"%(pts, rec_type, year,quarter,qtr_start_date,posting_date, revenue, earnings, eps, diluted_eps, margin, inventory, assets, liabilities, sh_out,diluted_sh_out,co_name_or_cik))
 
               if len(s_financial_values)>=max_packet:
                 # Create query to load text data into tradeType table
@@ -443,7 +443,7 @@ class TPCDI_Loader():
     # Create query to load text data into dim_company table
     dim_company_load_query="""
       INSERT INTO DimCompany
-      SELECT C.CIK, C.CIK,C.COMPANY_NAME,S.ST_NAME, I.IN_NAME,C.SP_RATING, IF(LEFT(C.SP_RATING,1)='A' OR LEFT (C.SP_RATING,3)='BBB','FALSE','TRUE'),
+      SELECT C.CIK, C.CIK,S.ST_NAME, C.COMPANY_NAME, I.IN_NAME,C.SP_RATING, IF(LEFT(C.SP_RATING,1)='A' OR LEFT (C.SP_RATING,3)='BBB','FALSE','TRUE'),
             C.CEO_NAME, C.ADDR_LINE_1,C.ADDR_LINE_2, C.POSTAL_CODE, C.CITY, C.STATE_PROVINCE, C.COUNTRY, C.DESCRIPTION,
             STR_TO_DATE(FOUNDING_DATE,'%Y%m%d'),TRUE, 1, STR_TO_DATE(LEFT(C.PTS,8),'%Y%m%d'), STR_TO_DATE('99991231','%Y%m%d')
       FROM S_Company C
@@ -459,3 +459,55 @@ class TPCDI_Loader():
     os.system(dim_company_ddl_cmd)
     os.system(dim_company_load_cmd)    
   
+  def load_target_financial(self):
+    """
+    Create Financial table in the staging database and then load rows by ..
+    """
+
+    # Create ddl to store tradeType
+    financial_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE Financial (
+      SK_CompanyID INTEGER Not NULL,
+      FI_YEAR numeric(4) Not NULL,
+      FI_QTR numeric(1) Not NULL,
+      FI_QTR_START_DATE DATE Not NULL,
+      FI_REVENUE numeric(15,2) Not NULL,
+      FI_NET_EARN numeric(15,2) Not NULL,
+      FI_BASIC_EPS numeric(10,2) Not NULL,
+      FI_DILUT_EPS numeric(10,2) Not NULL,
+      FI_MARGIN numeric(10,2) Not NULL,
+      FI_INVENTORY numeric(15,2) Not NULL,
+      FI_ASSETS numeric(15,2) Not NULL,
+      FI_LIABILITY numeric(15,2) Not NULL,
+      FI_OUT_BASIC numeric(12) Not NULL,
+      FI_OUT_DILUT numeric(12) Not NULL
+      );
+    """
+
+    # Create query to load text data into financial table
+    financial_load_query="""
+    INSERT INTO Financial
+      SELECT SK_CompanyID, SF.YEAR, SF.QUARTER, SF.QTR_START_DATE, SF.REVENUE,  SF.EARNINGS, SF.EPS, SF.DILUTED_EPS,SF.MARGIN, SF.INVENTORY, SF.ASSETS, SF.LIABILITIES, SF.SH_OUT, SF.DILUTED_SH_OUT
+      FROM S_Financial SF
+      JOIN DimCompany DC ON DC.SK_CompanyID = convert(SF.CO_NAME_OR_CIK, SIGNED)
+                          AND DC.EffectiveDate <= STR_TO_DATE(LEFT(SF.PTS,8),'%Y%m%d')
+                          AND STR_TO_DATE(LEFT(SF.PTS,8),'%Y%m%d') < DC.EndDate
+                          AND LEFT(CO_NAME_OR_CIK,1)='0';
+    INSERT INTO Financial
+      SELECT SK_CompanyID, SF.YEAR, SF.QUARTER, SF.QTR_START_DATE, SF.REVENUE,  SF.EARNINGS, SF.EPS, SF.DILUTED_EPS,SF.MARGIN, SF.INVENTORY, SF.ASSETS, SF.LIABILITIES, SF.SH_OUT, SF.DILUTED_SH_OUT
+      FROM S_Financial SF
+      JOIN DimCompany DC ON RTRIM(SF.CO_NAME_OR_CIK) = DC.Name
+                          AND DC.EffectiveDate <= STR_TO_DATE(LEFT(SF.PTS,8),'%Y%m%d')
+                          AND STR_TO_DATE(LEFT(SF.PTS,8),'%Y%m%d') < DC.EndDate
+                          AND LEFT(CO_NAME_OR_CIK,1) <> '0'
+    """
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    dim_financial_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+financial_ddl+"\""
+    dim_financial_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+financial_load_query+"\""
+    
+    # Execute the command
+    os.system(dim_financial_ddl_cmd)
+    os.system(dim_financial_load_cmd)    
