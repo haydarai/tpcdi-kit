@@ -293,7 +293,7 @@ class TPCDI_Loader():
         phone, income, number_cars, number_children, marital_status, age, credit_rating, own_or_rent_flag, employer, number_credit_cards, \
         net_worth = prospect.split(",")
         marketing_nameplate = ''
-        is_customer = "TRUE"
+        is_customer = "FALSE"
         
         try:  
           if int(net_worth) > 1000000 or int(income) > 200000:
