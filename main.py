@@ -38,3 +38,4 @@ if __name__ == "__main__":
     loader.load_staging_finwire()
     
     loader.load_target_dim_company()
+    loader.load_target_financial()
