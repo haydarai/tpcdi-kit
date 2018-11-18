@@ -94,6 +94,55 @@ class TPCDI_Loader():
     diMessages_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+diMessages_ddl+"\""
     os.system(diMessages_ddl_cmd)
 
+  def init_dimCustomer(self):
+    """
+    Create DimCustomer table in the target database.
+    """
+
+    # Create ddl to store dimCustomer
+    dimCustomer_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE DimCustomer (
+      SK_CustomerID INTEGER NOT NULL PRIMARY KEY,
+			CustomerID INTEGER NOT NULL,
+			TaxID CHAR(20) NOT NULL,
+			Status CHAR(10) NOT NULL,
+			LastName CHAR(30) NOT NULL,
+			FirstName CHAR(30) NOT NULL,
+			MiddleInitial CHAR(1),
+			Gender CHAR(1),
+			Tier INTEGER,
+			DOB date NOT NULL,
+			AddressLine1 VARCHAR(80) NOT NULL,
+			AddressLine2 VARCHAR(80),
+			PostalCode CHAR(12) NOT NULL,
+			City CHAR(25) NOT NULL,
+			Country	CHAR(24),
+			StateProv	CHAR(20) NOT NULL,
+			Phone1 CHAR(30),
+			Phone2 CHAR(30),
+			Phone3 CHAR(30),
+			Email1 CHAR(50),
+			Email2 CHAR(50),
+			NationalTaxRateDesc	VARCHAR(50),
+			NationalTaxRate	NUMERIC(6,5),
+			LocalTaxRateDesc VARCHAR(50),
+			LocalTaxRate NUMERIC(6,5),
+			AgencyID CHAR(30),
+			CreditRating INTEGER,
+			NetWorth NUMERIC(10),
+			MarketingNameplate VARCHAR(100),
+			IsCurrent BOOLEAN NOT NULL,
+			BatchID INTEGER NOT NULL,
+			EffectiveDate DATE NOT NULL,
+			EndDate DATE NOT NULL
+    );
+    """
+
+    dimCustomer_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dimCustomer_ddl+"\""
+    os.system(dimCustomer_ddl_cmd)
+
   def load_dimTime(self):
     """
     Create DimTime table in the target database and then load rows in Time.txt into it.

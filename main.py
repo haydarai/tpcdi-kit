@@ -32,6 +32,7 @@ if __name__ == "__main__":
     loader.load_audit()
     loader.init_diMessages()
     loader.load_prospect()
+    loader.init_dimCustomer()
 
     # Stupid example, joining the same Industry csv file
     # It will return iterator
