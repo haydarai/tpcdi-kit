@@ -21,6 +21,18 @@ class CSV_Transformer():
     def inverse_transform(self, transformed):
         return self.delimiter.join(transformed)
 
+def prepare_char_insertion(field):
+    field = field.replace("'", "''")
+    field = field.replace('"', '\\"')
+    return f"'{field}'"
+
+def prepare_numeric_insertion(numeric):
+    try:
+        int(numeric)
+        return numeric
+    except:
+        return "''"
+
 def external_sort(input_file, transformer, col_idx, max_chunk_size=50):
     """
     Sort file based on col_idx outside main memory. 

@@ -30,6 +30,8 @@ if __name__ == "__main__":
     loader.load_taxRate()
     loader.load_tradeType()
     loader.load_audit()
+    loader.init_diMessages()
+    loader.load_prospect()
 
     # Stupid example, joining the same Industry csv file
     # It will return iterator
