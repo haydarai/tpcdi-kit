@@ -73,6 +73,7 @@ class TPCDI_Loader():
     os.system(dimDate_load_cmd)
 
   def init_diMessages(self):
+  def init_diMessages(self):
     """
     Create DImessages table in the target database.
     """
