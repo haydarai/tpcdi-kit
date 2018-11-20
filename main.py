@@ -21,20 +21,46 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read('db.conf')
 
-    # Instantiate TPCDI_Loader and execute the loader in order
-    # First, load all flat files to staging tables
-    loader = TPCDI_Loader(options.scalefactor, options.dbname, config)
-    loader.load_staging_dimDate()
-    loader.load_staging_dimTime()
-    loader.load_staging_Industry()
-    loader.load_staging_statusType()
-    loader.load_staging_taxRate()
-    loader.load_staging_tradeType()
-    loader.load_audit()
-    loader.init_diMessages()
-    loader.load_prospect()
-    loader.init_dimCustomer()
-    loader.load_staging_finwire()
-    loader.load_target_dim_company()
-    loader.load_target_financial()
-    loader.load_target_dim_security()
+
+    # List all available batches in generated flat files
+    # batch_numbers = [int(name[5:]) for name in os.listdir('staging/5') if os.path.isdir(os.path.join('staging/5', name))]
+    # But le'ts first work on the first batch
+    batch_numbers = [1]
+    
+    for batch_number in batch_numbers:
+        # For the historical load, all data are loaded
+        if batch_number == 1:
+            loader = TPCDI_Loader(options.scalefactor, options.dbname, config, batch_number, overwrite=True)
+
+            # Step 1: Load the batchDate table for this batch
+            loader.load_current_batch_date()
+        
+            # Step 2: Load non-dependence tables
+            loader.load_dim_date()
+            loader.load_dim_time()
+            loader.load_industry()
+            loader.load_status_type()
+            loader.load_tax_rate()
+            loader.load_trade_type()
+            loader.load_audit()
+            loader.init_di_messages()
+            
+            # Step 3: Load staging tables
+            loader.load_staging_finwire()   
+            loader.load_staging_prospect()
+        
+            # Step 4: Load dependant table
+            loader.load_target_dim_company()
+            loader.load_target_financial()
+            loader.load_target_dim_security()
+            loader.load_prospect()
+            # loader.init_dimCustomer()
+    
+    
+    
+
+
+    
+
+
+    
