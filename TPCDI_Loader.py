@@ -432,14 +432,17 @@ class TPCDI_Loader():
     
     load_prospect_query = """
     INSERT INTO Prospect
-    SELECT SP.AGENCY_ID, (SELECT b_d.batch_date FROM batch_date b_d WHERE b_d.batch_number=1) SK_RecordDateID,
-          (SELECT b_d.batch_date FROM batch_date b_d WHERE b_d.batch_number=1) SK_UpdateDateID, 1, FALSE, SP.LAST_NAME,
+    SELECT SP.AGENCY_ID, (SELECT b_d.batch_date FROM batch_date b_d WHERE b_d.batch_number=%s) SK_RecordDateID,
+          (SELECT b_d.batch_date FROM batch_date b_d WHERE b_d.batch_number=%s) SK_UpdateDateID, %s, FALSE, SP.LAST_NAME,
           SP.FIRST_NAME, SP.MIDDLE_INITIAL, SP.GENDER, SP.ADDRESS_LINE_1, SP.ADDRESS_LINE_2, SP.POSTAL_CODE, SP.CITY,
           SP.STATE, SP.COUNTRY, SP.PHONE, SP.INCOME, SP.NUMBER_CARS,SP.NUMBER_CHILDREM, SP.MARITAL_STATUS, SP.AGE,
           SP.CREDIT_RATING, SP.OWN_OR_RENT_FLAG, SP.EMPLOYER,SP.NUMBER_CREDIT_CARDS, SP.NET_WORTH, (SELECT get_marketing_template(SP.NET_WORTH, SP.INCOME, SP.NUMBER_CREDIT_CARDS, SP.NUMBER_CHILDREM, SP.AGE,
                       SP.CREDIT_RATING, SP.NUMBER_CARS) ) MarketingNameplate
-    FROM S_Prospect SP
-    """
+    FROM S_Prospect SP;
+
+    INSERT INTO DImessages
+	    SELECT current_timestamp(),%s,'Prospect', 'Inserted rows', 'Status', (SELECT COUNT(*) FROM Prospect);
+    """%(str(self.batch_number),str(self.batch_number),str(self.batch_number),str(self.batch_number))
     load_prospect_cmd = prospect_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+load_prospect_query+"\""
     os.system(load_prospect_cmd)
   
