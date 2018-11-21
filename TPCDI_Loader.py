@@ -803,3 +803,30 @@ class TPCDI_Loader():
     os.system(dim_financial_ddl_cmd)
     os.system(dim_financial_load_cmd)    
 
+  def load_staging_trade_history(self):
+    """
+    Create s_trade_history table in to thedatabase and then load rows in TradeHistory.txt into it.
+    """
+
+    # Create ddl to store tade_history
+    tade_history_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE s_trade_history(
+      th_t_id NUMERIC(15),
+      th_dts DATETIME,
+      th_st_id CHAR(4)
+    );
+
+    """
+
+    # Create query to load text data into tade_history table
+    tade_history_load_query="LOAD DATA LOCAL INFILE '"+self.batch_dir+"TradeHistory.txt' INTO TABLE s_trade_history COLUMNS TERMINATED BY '|';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    tade_history_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+tade_history_ddl+"\""
+    tade_history_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+tade_history_load_query+"\""
+    
+    # Execute the command
+    os.system(tade_history_ddl_cmd)
+    os.system(tade_history_load_cmd)
