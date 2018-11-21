@@ -304,6 +304,79 @@ class TPCDI_Loader():
     os.system(tradeType_ddl_cmd)
     os.system(tradeType_load_cmd)
 
+  def load_staging_broker(self):
+    """
+    Create S_Broker table in the staging database and then load rows in HR.csv into it.
+    """
+
+    # Create ddl to store broker
+    broker_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE S_Broker(
+      EmployeeID INTEGER NOT NULL,
+      ManagerID INTEGER NOT NULL,
+      EmployeeFirstName CHAR(30) NOT NULL,
+      EmployeeLastName CHAR(30) NOT NULL,
+      EmployeeMI CHAR(1),
+      EmployeeJobCode NUMERIC(3),
+      EmployeeBranch CHAR(30),
+      EmployeeOffice CHAR(10),
+      EmployeePhone CHAR(14)
+    );
+    """
+
+    # Create query to load text data into broker table
+    broker_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/HR.csv' INTO TABLE S_Broker COLUMNS TERMINATED BY ',';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    broker_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+broker_ddl+"\""
+    broker_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+broker_load_query+"\""
+    
+    # Execute the command
+    os.system(broker_ddl_cmd)
+    os.system(broker_load_cmd)
+
+  def load_broker(self):
+    """
+    Create DimBroker table in the target database and then load rows in HR.csv into it.
+    """
+
+    # Create ddl to store broker
+    dim_broker_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE DimBroker(
+      SK_BrokerID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+      BrokerID INTEGER NOT NULL,
+      ManagerID INTEGER,
+      FirstName CHAR(50) NOT NULL,
+      LastName CHAR(50) NOT NULL,
+      MiddleInitial CHAR(1),
+      Branch CHAR(50),
+      Office CHAR(50),
+      Phone CHAR(14),
+      IsCurrent BOOLEAN NOT NULL,
+      BatchID INTEGER NOT NULL,
+      EffectiveDate DATE NOT NULL,
+      EndDate DATE NOT NULL
+    );
+    """
+
+    # Create query to load text data into broker table
+    dim_broker_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dim_broker_ddl+"\""
+    # Execute the command
+    os.system(dim_broker_ddl_cmd)
+    
+    load_dim_broker_query = """
+      INSERT INTO DimBroker (BrokerID,ManagerID,FirstName,LastName,MiddleInitial,Branch,Office,Phone,IsCurrent,BatchID,EffectiveDate,EndDate)
+      SELECT SB.EmployeeID, SB.ManagerID, SB.EmployeeFirstName, SB.EmployeeLastName, SB.EmployeeMI, SB.EmployeeBranch, SB.EmployeeOffice, SB.EmployeePhone, TRUE, 1, (SELECT d_d.DateValue FROM DimDate d_d ORDER BY d_d.DateValue ASC LIMIT 1), STR_TO_DATE('99991231','%Y%m%d')
+      FROM S_Broker SB
+      WHERE SB.EmployeeJobCode = 314;
+    """
+    load_dim_broker_cmd = dim_broker_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+load_dim_broker_query+"\""
+    os.system(load_dim_broker_cmd)
+
   def load_staging_prospect(self):
     """
     Create S_Prospect table in the staging database and then load rows in Prospect.csv into it.

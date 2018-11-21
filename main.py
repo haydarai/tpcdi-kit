@@ -45,15 +45,17 @@ if __name__ == "__main__":
             loader.load_audit()
             loader.init_di_messages()
             
-            # Step 3: Load staging tables
-            loader.load_staging_finwire()   
+            # # Step 3: Load staging tables
+            loader.load_staging_finwire()
             loader.load_staging_prospect()
+            loader.load_staging_broker()
         
             # Step 4: Load dependant table
             loader.load_target_dim_company()
             loader.load_target_financial()
             loader.load_target_dim_security()
             loader.load_prospect()
+            loader.load_broker()
             # loader.init_dimCustomer()
     
     
