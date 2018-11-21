@@ -805,7 +805,7 @@ class TPCDI_Loader():
 
   def load_staging_trade_history(self):
     """
-    Create s_trade_history table in to thedatabase and then load rows in TradeHistory.txt into it.
+    Create s_trade_history table in to the database and then load rows in TradeHistory.txt into it.
     """
 
     # Create ddl to store tade_history
@@ -830,3 +830,51 @@ class TPCDI_Loader():
     # Execute the command
     os.system(tade_history_ddl_cmd)
     os.system(tade_history_load_cmd)
+
+  def load_staging_trade(self):
+    """
+    Create s_trade table in to the database and then load rows in Trade.txt into it.
+    """
+
+    # Create ddl to store tade
+    tade_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE s_trade(
+      cdc_flag CHAR(1),
+      cdc_dsn NUMERIC(12),
+      t_id NUMERIC(15),
+      t_dts DATETIME,
+      t_st_id CHAR(4),
+      t_tt_id CHAR(3),
+      t_is_cash CHAR(3),
+      t_s_symb CHAR(15) NOT NULL,
+      t_qty NUMERIC(6) NOT NULL,
+      t_bid_price NUMERIC(8),
+      t_ca_id NUMERIC(11),
+      t_exec_name CHAR(49),
+      t_trade_price NUMERIC(8),
+      t_chrg NUMERIC(10),
+      t_comm NUMERIC(10),
+      t_tax NUMERIC(10)
+    );
+
+
+    """
+
+    if self.batch_number == 1:
+      # Create query to load text data into tade_ table
+      tade_load_query="LOAD DATA LOCAL INFILE '"+self.batch_dir+"Trade.txt' INTO TABLE s_trade COLUMNS TERMINATED BY '|' \
+      (t_id,t_dts,t_st_id,t_tt_id,t_is_cash,t_s_symb,t_qty,t_bid_price,t_ca_id,t_exec_name,t_trade_price,t_chrg,t_comm,t_tax);"
+    else:
+      # Create query to load text data into tade_ table
+      tade_load_query="LOAD DATA LOCAL INFILE '"+self.batch_dir+"Trade.txt' INTO TABLE s_trade COLUMNS TERMINATED BY '|'"
+      
+
+    # Construct mysql client bash command to execute ddl and data loading query
+    tade_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+tade_ddl+"\""
+    tade_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+tade_load_query+"\""
+    
+    # Execute the command
+    os.system(tade_ddl_cmd)
+    os.system(tade_load_cmd)
