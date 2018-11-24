@@ -1,5 +1,6 @@
 import os
 import glob
+import xmltodict
 
 from utils import prepare_char_insertion, prepare_numeric_insertion
 
@@ -304,6 +305,221 @@ class TPCDI_Loader():
     os.system(tradeType_ddl_cmd)
     os.system(tradeType_load_cmd)
 
+  def load_staging_customer(self):
+    """
+    Create S_Customer table in the staging database and then load rows in CustomerMgmt.xml into it.
+    """
+
+    # Create ddl to store customer
+    customer_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE S_Customer(
+      ActionType CHAR(9) NOT NULL,
+      ActionTS CHAR(20) NOT NULL,
+      C_ID INTEGER NOT NULL,
+      C_TAX_ID CHAR(20),
+      C_GNDR CHAR(1) NOT NULL,
+      C_TIER NUMERIC(1),
+      C_DOB DATE,
+      C_L_NAME CHAR(25),
+      C_F_NAME CHAR(20),
+      C_M_NAME CHAR(1),
+      C_ADLINE1 CHAR(80),
+      C_ADLINE2 CHAR(80),
+      C_ZIPCODE CHAR(12),
+      C_CITY CHAR(25),
+      C_STATE_PROV CHAR(20),
+      C_CTRY CHAR(24),
+      C_PRIM_EMAIL CHAR(50),
+      C_ALT_EMAIL CHAR(50),
+      C_PHONE_1_C_CTRY_CODE CHAR(30),
+      C_PHONE_1_C_AREA_CODE CHAR(30),
+      C_PHONE_1_C_LOCAL CHAR(30),
+      C_PHONE_1_C_EXT CHAR(30),
+      C_PHONE_2_C_CTRY_CODE CHAR(30),
+      C_PHONE_2_C_AREA_CODE CHAR(30),
+      C_PHONE_2_C_LOCAL CHAR(30),
+      C_PHONE_2_C_EXT CHAR(30),
+      C_PHONE_3_C_CTRY_CODE CHAR(30),
+      C_PHONE_3_C_AREA_CODE CHAR(30),
+      C_PHONE_3_C_LOCAL CHAR(30),
+      C_PHONE_3_C_EXT CHAR(30),
+      C_LCL_TX_ID CHAR(4),
+      C_NAT_TX_ID CHAR(4),
+      CA_ID INTEGER NOT NULL,
+      CA_TAX_ST NUMERIC(1),
+      CA_B_ID INTEGER,
+      CA_NAME CHAR(50)
+    );
+    """
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    customer_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+customer_ddl+"\""
+    
+    # Execute the command
+    os.system(customer_ddl_cmd)
+
+    s_customer_base_query = "INSERT INTO S_Customer VALUES "
+    s_customer_values = []
+    max_packet = 150
+
+    with open("staging/"+self.sf+"/Batch1/CustomerMgmt.xml") as fd:
+      doc = xmltodict.parse(fd.read())
+      actions = doc['TPCDI:Actions']['TPCDI:Action']
+      for action in actions:
+        ActionType = prepare_char_insertion(action['@ActionType'])
+        ActionTS = prepare_char_insertion(action['@ActionTS'])
+        C_ID = prepare_numeric_insertion(action['Customer']['@C_ID'])
+        C_TAX_ID = C_GNDR = C_TIER = C_DOB = C_L_NAME = C_F_NAME = C_M_NAME = C_ADLINE1 = C_ADLINE2 = C_ZIPCODE = C_CITY = C_STATE_PROV = C_CTRY = "''"
+        try:
+          C_TAX_ID = prepare_char_insertion(action['Customer']['@C_TAX_ID'])
+        except:
+          pass
+        try:
+          C_GNDR = prepare_char_insertion(action['Customer']['@C_GNDR'])
+        except:
+          pass
+        try:
+          C_TIER = prepare_numeric_insertion(action['Customer']['@C_TIER'])
+        except:
+          pass
+        try:
+          C_DOB = prepare_char_insertion(action['Customer']['@C_DOB'])
+        except:
+          pass
+        try:
+          C_L_NAME = prepare_char_insertion(action['Customer']['Name']['C_L_NAME'])
+        except:
+          pass
+        try:
+          C_F_NAME = prepare_char_insertion(action['Customer']['Name']['C_F_NAME'])
+        except:
+          pass
+        try:
+          C_M_NAME = prepare_char_insertion(action['Customer']['Name']['C_M_NAME'])
+        except:
+          pass
+        try:
+          C_ADLINE1 = prepare_char_insertion(action['Customer']['Address']['C_ADLINE1'])
+        except:
+          pass
+        try:
+          C_ADLINE2 = prepare_char_insertion(action['Customer']['Address']['C_ADLINE2'])
+        except:
+          pass
+        try:
+          C_ZIPCODE = prepare_char_insertion(action['Customer']['Address']['C_ADLINE2'])
+        except:
+          pass
+        try:
+          C_CITY = prepare_char_insertion(action['Customer']['Address']['C_CITY'])
+        except:
+          pass
+        try:
+          C_STATE_PROV = prepare_char_insertion(action['Customer']['Address']['C_STATE_PROV'])
+        except:
+          pass
+        try:
+          C_CTRY = prepare_char_insertion(action['Customer']['Address']['C_CTRY'])
+        except:
+          pass
+        C_PRIM_EMAIL = C_ALT_EMAIL = C_PHONE_1_C_CTRY_CODE = C_PHONE_1_C_AREA_CODE = C_PHONE_1_C_LOCAL = C_PHONE_2_C_CTRY_CODE = C_PHONE_2_C_AREA_CODE = C_PHONE_2_C_LOCAL = C_PHONE_3_C_CTRY_CODE = C_PHONE_3_C_AREA_CODE = C_PHONE_3_C_LOCAL = C_PHONE_1_C_EXT = C_PHONE_2_C_EXT = C_PHONE_3_C_EXT = "''"
+        try:
+          C_PRIM_EMAIL = prepare_char_insertion(action['Customer']['ContactInfo']['C_PRIM_EMAIL'])
+        except:
+          pass
+        try:
+          C_ALT_EMAIL = prepare_char_insertion(action['Customer']['ContactInfo']['C_ALT_EMAIL'])
+        except:
+          pass
+        try:
+          C_PHONE_1_C_EXT = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_1']['C_EXT'])
+        except:
+          pass
+        try:
+          C_PHONE_1_C_LOCAL = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_1']['C_LOCAL'])
+        except:
+          pass
+        try:
+          C_PHONE_1_C_AREA_CODE = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_1']['C_AREA_CODE'])
+        except:
+          pass
+        try:
+          C_PHONE_1_C_CTRY_CODE = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_1']['C_CTRY_CODE'])
+        except:
+          pass
+        try:
+          C_PHONE_2_C_EXT = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_2']['C_EXT'])
+        except:
+          pass
+        try:
+          C_PHONE_2_C_LOCAL = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_2']['C_LOCAL'])
+        except:
+          pass
+        try:
+          C_PHONE_2_C_AREA_CODE = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_2']['C_AREA_CODE'])
+        except:
+          pass
+        try:
+          C_PHONE_2_C_CTRY_CODE = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_2']['C_CTRY_CODE'])
+        except:
+          pass
+        try:
+          C_PHONE_3_C_EXT = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_3']['C_EXT'])
+        except:
+          pass
+        try:
+          C_PHONE_3_C_LOCAL = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_3']['C_LOCAL'])
+        except:
+          pass
+        try:
+          C_PHONE_3_C_AREA_CODE = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_3']['C_AREA_CODE'])
+        except:
+          pass
+        try:
+          C_PHONE_3_C_CTRY_CODE = prepare_char_insertion(action['Customer']['ContactInfo']['C_PHONE_3']['C_CTRY_CODE'])
+        except:
+          pass
+        C_LCL_TX_ID = C_NAT_TX_ID = "''"
+        try:
+          C_LCL_TX_ID = prepare_char_insertion(action['Customer']['TaxInfo']['C_LCL_TX_ID'])
+          C_NAT_TX_ID = prepare_char_insertion(action['Customer']['TaxInfo']['C_NAT_TX_ID'])
+        except:
+          pass
+        CA_ID = "''"
+        try:
+          CA_ID = prepare_numeric_insertion(action['Customer']['Account']['@CA_ID'])
+        except:
+          pass
+        CA_TAX_ST = "''"
+        try:
+          CA_TAX_ST = prepare_numeric_insertion(action['Customer']['Account']['@CA_TAX_ST'])
+        except:
+          pass
+        CA_B_ID = "''"
+        try:
+          CA_B_ID = prepare_numeric_insertion(action['Customer']['Account']['CA_B_ID'])
+        except:
+          pass
+        CA_NAME = "''"
+        try:
+          CA_NAME = prepare_char_insertion(action['Customer']['Account']['CA_NAME'])
+        except:
+          pass
+
+        s_customer_values.append(f"({ActionType}, {ActionTS}, {C_ID}, {C_TAX_ID}, {C_GNDR}, {C_TIER}, {C_DOB}, {C_L_NAME}, {C_F_NAME}, {C_M_NAME}, {C_ADLINE1}, {C_ADLINE2}, {C_ZIPCODE}, {C_CITY}, {C_STATE_PROV}, {C_CTRY}, {C_PRIM_EMAIL}, {C_ALT_EMAIL}, {C_PHONE_1_C_CTRY_CODE}, {C_PHONE_1_C_AREA_CODE}, {C_PHONE_1_C_LOCAL}, {C_PHONE_1_C_EXT}, {C_PHONE_2_C_CTRY_CODE}, {C_PHONE_2_C_AREA_CODE}, {C_PHONE_2_C_LOCAL}, {C_PHONE_2_C_EXT}, {C_PHONE_3_C_CTRY_CODE}, {C_PHONE_3_C_AREA_CODE}, {C_PHONE_3_C_LOCAL}, {C_PHONE_3_C_EXT}, {C_LCL_TX_ID}, {C_NAT_TX_ID}, {CA_ID}, {CA_TAX_ST}, {CA_B_ID}, {CA_NAME})")
+        if len(s_customer_values)>=max_packet:
+          # Create query to load text data into tradeType table
+          s_customer_load_query=s_customer_base_query+','.join(s_customer_values)
+          s_customer_values = []
+          # Construct mysql client bash command to execute ddl and data loading query
+          s_customer_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+s_customer_load_query+"\""
+      
+          # Execute the command
+          os.system(s_customer_load_cmd)
+        
+  
   def load_staging_broker(self):
     """
     Create S_Broker table in the staging database and then load rows in HR.csv into it.

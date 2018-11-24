@@ -22,6 +22,10 @@ class CSV_Transformer():
         return self.delimiter.join(transformed)
 
 def prepare_char_insertion(field):
+    if field is None:
+        return "''"
+    if field is "''":
+        return field
     field = field.replace("'", "''")
     field = field.replace('"', '\\"')
     return f"'{field}'"

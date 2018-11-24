@@ -56,6 +56,7 @@ if __name__ == "__main__":
             loader.load_target_dim_security()
             loader.load_prospect()
             loader.load_broker()
+            loader.load_staging_customer()
             # loader.init_dimCustomer()
     
     
