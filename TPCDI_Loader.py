@@ -973,13 +973,34 @@ class TPCDI_Loader():
       JOIN StatusType S ON C.STATUS = S.ST_ID;
     """
     
+    # Handle type 2 slowly changing dimension on company
+    dim_company_sdc_query = """
+    CREATE TABLE sdc_dimcompany
+      LIKE DimCompany;
+    ALTER TABLE sdc_dimcompany
+      ADD COLUMN RN NUMERIC;
+    INSERT INTO sdc_dimcompany
+    SELECT *, ROW_NUMBER() OVER(ORDER BY CompanyID, EffectiveDate) RN
+    FROM DimCompany;
+
+    WITH candidate AS (
+    SELECT s1.SK_CompanyID,
+          s2.EffectiveDate EndDate
+    FROM sdc_dimcompany s1
+          JOIN sdc_dimcompany s2 ON (s1.RN = (s2.RN - 1) AND s1.CompanyID = s2.CompanyID))
+    UPDATE DimCompany,candidate SET DimCompany.EndDate = candidate.EndDate, DimCompany.IsCurrent=FALSE WHERE DimCompany.SK_CompanyID = candidate.SK_CompanyID;
+    DROP TABLE sdc_dimcompany;
+    """
+
     # Construct mysql client bash command to execute ddl and data loading query
     dim_company_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dim_company_ddl+"\""
     dim_company_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+dim_company_load_query+"\""
-    
+    dim_company_sdc_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+dim_company_sdc_query+"\""
+
     # Execute the command
     os.system(dim_company_ddl_cmd)
     os.system(dim_company_load_cmd)    
+    os.system(dim_company_sdc_cmd)
   
   def load_target_dim_security(self):
     """
