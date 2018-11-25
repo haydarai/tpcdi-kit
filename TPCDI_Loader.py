@@ -544,6 +544,36 @@ class TPCDI_Loader():
     load_dim_broker_cmd = dim_broker_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+load_dim_broker_query+"\""
     os.system(load_dim_broker_cmd)
 
+
+  def load_staging_cash_balances(self):
+    """
+    Create S_Cash_Balances table in the staging database and then load rows in CashTransaction.txt into it.
+    """
+
+    # Create ddl to store cash balances
+    cash_balances_ddl = """
+    USE """+self.db_name+""";
+
+    CREATE TABLE S_Cash_Balances(
+      CT_CA_ID INTEGER NOT NULL,
+      CT_DTS DATE NOT NULL,
+      CT_AMT CHAR(20) NOT NULL,
+      CT_NAME CHAR(100) NOT NULL
+    );
+    """
+
+    # Create query to load text data into prospect table
+    cash_balances_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/CashTransaction.txt' INTO TABLE S_Cash_Balances COLUMNS TERMINATED BY '|';"
+    
+    # Construct mysql client bash command to execute ddl and data loading query
+    cash_balances_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+cash_balances_ddl+"\""
+    cash_balances_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+cash_balances_load_query+"\""
+    
+    # Execute the command
+    os.system(cash_balances_ddl_cmd)
+    os.system(cash_balances_load_cmd)
+
+
   def load_staging_watches(self):
     """
     Create S_Watches table in the staging database and then load rows in WatchHistory.txt into it.
