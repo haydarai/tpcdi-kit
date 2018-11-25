@@ -49,6 +49,8 @@ if __name__ == "__main__":
             loader.load_staging_finwire()
             loader.load_staging_prospect()
             loader.load_staging_broker()
+            loader.load_staging_customer()
+            loader.load_staging_watches()
         
             # Step 4: Load dependant table
             loader.load_target_dim_company()
@@ -56,8 +58,6 @@ if __name__ == "__main__":
             loader.load_target_dim_security()
             loader.load_prospect()
             loader.load_broker()
-            loader.load_staging_customer()
-            # loader.init_dimCustomer()
     
     
     
