@@ -1060,14 +1060,35 @@ class TPCDI_Loader():
                         AND STR_TO_DATE(LEFT(SS.PTS,8),'%Y%m%d') < DC.EndDate
                         AND LEFT(SS.COMPANY_NAME_OR_CIK,1) <> '0';
     """
+
+    dim_security_scd = """
+    CREATE TABLE sdc_dimsecurity
+      LIKE DimSecurity;
+    ALTER TABLE sdc_dimsecurity
+      ADD COLUMN RN NUMERIC;
+    INSERT INTO sdc_dimsecurity
+    SELECT *, ROW_NUMBER() OVER(ORDER BY Symbol, EffectiveDate) RN
+    FROM DimSecurity;
+
+    WITH candidate AS (SELECT s1.SK_SecurityID, s2.EffectiveDate EndDate
+                      FROM sdc_dimsecurity s1
+                              JOIN sdc_dimsecurity s2 ON (s1.RN = (s2.RN - 1) AND s1.Symbol = s2.Symbol))
+    UPDATE DimSecurity, candidate
+    SET DimSecurity.EndDate   = candidate.EndDate,
+        DimSecurity.IsCurrent = FALSE
+    WHERE DimSecurity.SK_SecurityID = candidate.SK_SecurityID;
+    DROP TABLE sdc_dimsecurity;
+    """
     
     # Construct mysql client bash command to execute ddl and data loading query
     dim_security_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+security_ddl+"\""
     dim_security_load_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" --local-infile=1 -D "+self.db_name+" -e \""+security_load_query+"\""
-    
+    dim_security_scd_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+dim_security_scd+"\""
+
     # Execute the command
     os.system(dim_security_ddl_cmd)
     os.system(dim_security_load_cmd)
+    os.system(dim_security_scd_cmd)
 
   def load_target_financial(self):
     """
