@@ -638,7 +638,7 @@ class TPCDI_Loader():
     """
 
     # Create query to load text data into prospect table
-    prospect_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/Prospect.CSV' INTO TABLE S_Prospect COLUMNS TERMINATED BY ',';"
+    prospect_load_query="LOAD DATA LOCAL INFILE 'staging/"+self.sf+"/Batch1/Prospect.csv' INTO TABLE S_Prospect COLUMNS TERMINATED BY ',';"
     
     # Construct mysql client bash command to execute ddl and data loading query
     prospect_ddl_cmd = TPCDI_Loader.BASE_MYSQL_CMD+" -D "+self.db_name+" -e \""+prospect_ddl+"\""
