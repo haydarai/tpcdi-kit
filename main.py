@@ -1,6 +1,7 @@
 import optparse
 import configparser
 from utils import sort_merge_join, CSV_Transformer
+import time
 
 from TPCDI_Loader import TPCDI_Loader
 
@@ -27,6 +28,7 @@ if __name__ == "__main__":
     # But le'ts first work on the first batch
     batch_numbers = [1]
     
+    start = time.time()
     for batch_number in batch_numbers:
         # For the historical load, all data are loaded
         if batch_number == 1:
@@ -59,8 +61,8 @@ if __name__ == "__main__":
             loader.load_target_dim_security()
             loader.load_prospect()
             loader.load_broker()
-    
-    
+    end = time.time()
+    print(end-start)
     
 
 
